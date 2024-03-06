@@ -1,1 +1,1 @@
-web: uvicorn src.blockchain_backend:app --host=0.0.0.0 --port=${PORT:-5000}
+web: uvicorn blockchain_backend:app --host=0.0.0.0 --port=${PORT:-5000}
