@@ -16,6 +16,16 @@ app = FastAPI()
 
 load_dotenv()
 
+url = ""
+if "MONGO_URL" in os. environ:
+    url = os.getenv ("MONGO_URL" )
+else:
+    user = quote (os. getenv ("MONGO_USER") )
+    pw = quote (os. getenv ("MONGO_PASSWORD") )
+    hosts = quote (os. getenv ("MONGO_HOSTS"))
+    # hosts=','. join([' mongoSber3.multitender.ru: 8635', 'mongoSber3.multitender.ru:8635']),
+    url = f'mongodb://{user}:{pw}@{hosts}/?authSource={auth_src}'
+
 user = quote(os.getenv("MONGO_USER"))
 pw = quote(os.getenv("MONGO_PASSWORD"))
 hosts = quote(os.getenv("MONGO_HOSTS"))
