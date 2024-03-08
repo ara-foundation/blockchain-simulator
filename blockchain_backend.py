@@ -24,16 +24,10 @@ else:
     pw = quote (os. getenv ("MONGO_PASSWORD") )
     hosts = quote (os. getenv ("MONGO_HOSTS"))
     # hosts=','. join([' mongoSber3.multitender.ru: 8635', 'mongoSber3.multitender.ru:8635']),
+    auth_src = quote(os.getenv("MONGO_HOSTS_AUTH_SRC"))
     url = f'mongodb://{user}:{pw}@{hosts}/?authSource={auth_src}'
 
-user = quote(os.getenv("MONGO_USER"))
-pw = quote(os.getenv("MONGO_PASSWORD"))
-hosts = quote(os.getenv("MONGO_HOSTS"))
-auth_src = quote(os.getenv("MONGO_HOSTS_AUTH_SRC"))
 tlsCAFile = os.getenv("MONGO_CA_FILE")
-
-# hosts=','.join(['mongoSber3.multitender.ru:8635', 'mongoSber3.multitender.ru:8635']),
-url = f'mongodb://{user}:{pw}@{hosts}/?authSource={auth_src}'
 
 client = pymongo.MongoClient(
     url,
