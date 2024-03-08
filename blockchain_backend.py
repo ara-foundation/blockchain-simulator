@@ -16,18 +16,14 @@ app = FastAPI()
 
 load_dotenv()
 
-url = ""
-if "MONGO_URL" in os.environ:
-    url = os.getenv("MONGO_URL")
-else:
-    user = quote(os.getenv("MONGO_USER"))
-    pw = quote(os.getenv("MONGO_PASSWORD"))
-    hosts = quote(os.getenv("MONGO_HOSTS"))
-    auth_src = quote(os.getenv("MONGO_HOSTS_AUTH_SRC"))
-    # hosts=','.join(['mongoSber3.multitender.ru:8635', 'mongoSber3.multitender.ru:8635']),
-    url = f'mongodb://{user}:{pw}@{hosts}/?authSource={auth_src}'
-
+user = quote(os.getenv("MONGO_USER"))
+pw = quote(os.getenv("MONGO_PASSWORD"))
+hosts = quote(os.getenv("MONGO_HOSTS"))
+auth_src = quote(os.getenv("MONGO_HOSTS_AUTH_SRC"))
 tlsCAFile = os.getenv("MONGO_CA_FILE")
+
+# hosts=','.join(['mongoSber3.multitender.ru:8635', 'mongoSber3.multitender.ru:8635']),
+url = f'mongodb://{user}:{pw}@{hosts}/?authSource={auth_src}'
 
 client = pymongo.MongoClient(
     url,
@@ -65,12 +61,12 @@ def add(issue: Issue):
         "issue": {
             "title": issue.title,
             "document": issue.document,
-            "incentive": [],
+            "incentive": {},
             "website": issue.website,
             "author": issue.author
         }
     }
-    document["issue"]["incentive"].append({issue.author: float(issue.incentive)})
+    document["issue"]["incentive"] = {issue.author: float(issue.incentive)}
     response = collection.insert_one(document)
     ct = datetime.datetime.now()
     result = {
@@ -110,7 +106,7 @@ class LikeParams(BaseModel):
 def like(like_params: LikeParams):
     _id = ObjectId(like_params.id)
     document = collection.find_one({"_id": _id})
-    document["issue"]["incentive"].append({like_params.author: float(like_params.incentive)})
+    document["issue"]["incentive"][like_params.author] = like_params.incentive
     new_values = {"$set": {"issue.incentive": document["issue"]["incentive"]}}
     collection.update_one({"_id": _id}, new_values)
     # print(issue)
