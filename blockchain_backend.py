@@ -61,12 +61,12 @@ def add(issue: Issue):
         "issue": {
             "title": issue.title,
             "document": issue.document,
-            "incentive": [],
+            "incentive": {},
             "website": issue.website,
             "author": issue.author
         }
     }
-    document["issue"]["incentive"].append({issue.author: float(issue.incentive)})
+    document["issue"]["incentive"] = {issue.author: float(issue.incentive)}
     response = collection.insert_one(document)
     ct = datetime.datetime.now()
     result = {
@@ -106,7 +106,7 @@ class LikeParams(BaseModel):
 def like(like_params: LikeParams):
     _id = ObjectId(like_params.id)
     document = collection.find_one({"_id": _id})
-    document["issue"]["incentive"].append({like_params.author: float(like_params.incentive)})
+    document["issue"]["incentive"][like_params.author] = like_params.incentive
     new_values = {"$set": {"issue.incentive": document["issue"]["incentive"]}}
     collection.update_one({"_id": _id}, new_values)
     # print(issue)
