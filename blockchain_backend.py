@@ -43,7 +43,7 @@ collection = db.issues
 class Issue(BaseModel):
     title: str
     document: str | None = None
-    incentive: float
+    incentive: dict[str, float]
     website: str
     author: str
 
@@ -65,12 +65,11 @@ def add(issue: Issue):
         "issue": {
             "title": issue.title,
             "document": issue.document,
-            "incentive": {},
+            "incentive": issue.incentive,
             "website": issue.website,
             "author": issue.author
         }
     }
-    document["issue"]["incentive"] = {issue.author: float(issue.incentive)}
     response = collection.insert_one(document)
     ct = datetime.datetime.now()
     result = {
