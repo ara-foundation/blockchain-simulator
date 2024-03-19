@@ -1,0 +1,30 @@
+[project]
+name = "blockchain-simulator"
+version = "0.0.1"
+authors = [
+  {name = "Sergey Pak"},
+  {name = "Medet Ahmetson", email = "medet@medet.com"}
+]
+maintainers = [
+  {name = "Sergay Pak"}
+]
+readme = "README.md"
+license = {text = "MPL 2.0"}
+classifiers = [
+  "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "fastapi==0.110.0",
+    "glom==22.1.0",
+    "pandas==1.5.0",
+    "pydantic==1.10.2",
+    "pymongo==4.2.0",
+    "python-dotenv==1.0.1",
+    "typing_extensions==4.10.0",
+    "uvicorn==0.27.1",
+    "watchfiles==0.21.0",
+    "websockets==12.0",
+    "dnspython==2.6.1"
+]
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
