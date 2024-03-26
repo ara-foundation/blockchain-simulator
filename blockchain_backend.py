@@ -69,7 +69,7 @@ def add(issue: Issue):
             "author": issue.author
         }
     }
-    if issue.author in issue.incentive:
+    if issue.author not in issue.incentive:
         return "No incentive was provided"
     document["issue"]["incentive"] = {issue.author: float(issue.incentive[issue.author])}
     if get_balance(issue.author) >= issue.incentive:
