@@ -69,7 +69,7 @@ def add(issue: Issue):
             "author": issue.author
         }
     }
-    document["issue"]["incentive"] = {issue.author: float(issue.incentive)}
+    document["issue"]["incentive"] = {issue.author: float(issue.incentive[issue.incentive[issue.author]])}
     if get_balance(issue.author) >= issue.incentive:
         response = issues.insert_one(document)
         save_transaction(issue.author, "ARA", issue.incentive, "ADD")
