@@ -71,10 +71,11 @@ def add(issue: Issue):
     }
     if issue.author not in issue.incentive:
         return "No incentive was provided"
-    document["issue"]["incentive"] = {issue.author: float(issue.incentive[issue.author])}
-    if get_balance(issue.author) >= issue.incentive:
+    amount = float(issue.incentive[issue.author])
+    document["issue"]["incentive"] = {issue.author: amount}
+    if get_balance(issue.author) >= amount:
         response = issues.insert_one(document)
-        save_transaction(issue.author, "ARA", issue.incentive, "ADD")
+        save_transaction(issue.author, "ARA", amount, "ADD")
         ct = datetime.datetime.now()
         result = {
             "id": str(response.inserted_id),
