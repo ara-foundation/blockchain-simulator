@@ -13,6 +13,8 @@ from typing_extensions import TypedDict
 from typing import List
 import pandas as pd
 
+hour_pay_contract_id = "65f60e025a2ee015714b0c1a"
+
 app = FastAPI()
 
 load_dotenv()
@@ -37,6 +39,7 @@ client = pymongo.MongoClient(
 db = client.medet
 issues = db.issues
 transactions = db.transactions
+smart_contracts = db.smartContracts
 
 
 class Issue(BaseModel):
@@ -310,6 +313,172 @@ def transfer(from_account: str, to_account: str, value: float):
     save_transaction(from_account, to_account, value, "TRANSFER")
     response = {from_account: get_balance(from_account), to_account: get_balance(to_account)}
     return response
+
+# Smartcontract part
+class ProjectParams(BaseModel):
+    issueId: str
+    implementationId: int
+    price: float
+    distributions: List[str]
+
+def get_registered(_id: str) -> List | None:
+    registered = None
+    contract_id = ObjectId(_id)
+    contract = smart_contracts.find_one({"_id": contract_id})
+    print(contract)
+    if contract:
+        registered = glom.glom(contract, "registered", default=None)
+    return registered
+
+def get_distributions(issueId: str, implementationId: int) -> list | None:
+    registered = get_registered(hour_pay_contract_id)
+    distributions = None
+    df = pd.DataFrame(registered)
+    exist_issue = df[
+        (df["issueId"] == issueId)
+        &
+        (df["implementationId"] == implementationId)
+    ]
+    if not exist_issue.empty:  # delete previous version
+        distributions = exist_issue["distributions"].iloc[0]
+    return distributions
+
+@app.post("/mut_eval_setProject")
+def mut_eval_setProject(projectParams: ProjectParams):
+    registered = get_registered(hour_pay_contract_id)
+    df = pd.DataFrame(registered)
+    exist_issue = df[
+        (df["issueId"] == projectParams.issueId)
+        &
+        (df["implementationId"] == projectParams.implementationId)
+    ]
+    if not exist_issue.empty:  # delete previous version
+        df.drop(
+            df[
+                (df["issueId"] == projectParams.issueId)
+                &
+                (df["implementationId"] == projectParams.implementationId)
+            ].index
+        )
+    registered = df.to_dict("records")
+    registered.append(dict(projectParams))
+    new_values = {"$set": {"registered": registered}}
+    smart_contracts.update_one({"_id": ObjectId(hour_pay_contract_id)}, new_values)
+
+def get_deposits(_id: str) -> List | None:
+    deposits = None
+    contract_id = ObjectId(_id)
+    contract = smart_contracts.find_one({"_id": contract_id})
+    print(contract)
+    if contract:
+        deposits = glom.glom(contract, "deposits", default=None)
+    return deposits
+
+def add_deposit(issueId: str, implementationId: int, userId: str):
+    new_end_time = None
+    deposits = get_deposits(hour_pay_contract_id)
+    if deposits:
+        df = pd.DataFrame(deposits)
+        user_deposits = df[
+            (df["issueId"] == issueId)
+            &
+            (df["implementationId"] == implementationId)
+            &
+            (df["userId"] == userId)
+            ]
+        if not user_deposits.empty:
+            last_end_time = max(user_deposits["endTime"])
+            if last_end_time >= datetime.datetime.now():
+                new_end_time = last_end_time + datetime.timedelta(hours=1)
+    if not new_end_time:
+        new_end_time = datetime.datetime.now() + datetime.timedelta(hours=1)
+    deposits.append({
+        "issueId": issueId,
+        "implementationId": implementationId,
+        "userId": userId,
+        "endTime": new_end_time})
+    new_values = {"$set": {"deposits": deposits}}
+    smart_contracts.update_one({"_id": ObjectId(hour_pay_contract_id)}, new_values)
+
+@app.get("/mut_eval_deposit")
+def mut_eval_deposit(issueId: str, implementationId: int, userId: str):
+    price = None
+
+    registered = get_registered(hour_pay_contract_id)
+    if registered:
+        df = pd.DataFrame(registered)
+        exist_issue = df[
+            (df["issueId"] == issueId)
+            &
+            (df["implementationId"] == implementationId)
+            &
+            (df["userId"] == userId)
+        ]
+
+        if not exist_issue.empty:
+            # send payment to ARA
+            price = float(exist_issue["price"])
+            if get_balance(userId) >= price:
+                save_transaction(userId, "ARA", price, "pay_per_hour")
+                # save deposit info in smart-contract
+                add_deposit(issueId, implementationId, userId)
+
+@app.get("/eval_subscribed")
+def eval_subscribed(issueId: str, implementationId: int, userId: str) -> bool:
+    deposits = get_deposits(hour_pay_contract_id)
+    exist_issue = None
+    last_end_time = pd.DataFrame()
+    if deposits:
+        df = pd.DataFrame(deposits)
+        exist_deposit = df[
+            (df["issueId"] == issueId)
+            &
+            (df["implementationId"] == implementationId)
+            &
+            (df["userId"] == userId)
+        ]
+        if not exist_deposit.empty:
+            last_end_time = exist_deposit["endTime"]
+    if not last_end_time.empty:
+        if max(last_end_time) > datetime.datetime.now():
+            return True
+    return False
+
+@app.get("/eval_withdrawable")
+def eval_withdrawable(issueId: str, implementationId: int) -> float:
+    deposits = get_deposits(hour_pay_contract_id)
+    exist_issue = None
+    last_end_time = pd.DataFrame()
+    if deposits:
+        df = pd.DataFrame(deposits)
+        withdrawable_deposits = df[
+            (df["issueId"] == issueId)
+            &
+            (df["implementationId"] == implementationId)
+            &
+            (df["endTime"] < datetime.datetime.now())
+            ]
+        if not withdrawable_deposits.empty:
+            registered = get_registered(hour_pay_contract_id)
+            if registered:
+                registered = pd.DataFrame(registered)
+                withdrawable_deposits = withdrawable_deposits.merge(registered, on=["issueId", "implementationId"])
+                withdrawable = sum(withdrawable_deposits["price"])
+                return withdrawable
+    return 0
+
+@app.get("/mut_eval_withdrawToImpl")
+def mut_eval_withdrawToImpl(issueId: str, implementationId: int):
+    pay_per_one = None
+    distributions = None
+    amount = eval_withdrawable(issueId, implementationId)
+    distributions = get_distributions(issueId, implementationId)
+    print("DISTRIBUTIONS: !!!", distributions)
+    if distributions:
+        pay_per_one = amount / len(distributions)
+    if pay_per_one:
+        for distribution in distributions:
+            save_transaction("ARA", distribution, pay_per_one, "pay for use in 1 hour")
 
 
 print("Backend stared")
