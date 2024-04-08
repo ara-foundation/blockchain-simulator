@@ -487,6 +487,20 @@ def mut_eval_withdrawToImpl(issueId: str, implementationId: int):
         for distribution in distributions:
             save_transaction("ARA", distribution, pay_per_one, "pay for use in 1 hour")
 
+@app.get("/list_deposits")
+def list_deposits(issueId: str, implementationId: int, userId: str):
+    deposits = get_deposits(hour_pay_contract_id)
+    if deposits:
+        df = pd.DataFrame(deposits)
+        user_deposits = df[
+            (df["issueId"] == issueId)
+            &
+            (df["implementationId"] == implementationId)
+            &
+            (df["userId"] == userId)
+            ]
+        return user_deposits.to_dict(orient='records')
+    return []
 
 print("Backend stared")
 
