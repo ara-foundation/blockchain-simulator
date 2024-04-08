@@ -262,6 +262,11 @@ def prod(prod_params: ProdParams):
                             save_transaction("ARA", developer, reward_per_one, "PROD")
                         issues.update_one({"_id": _id}, new_values)
 
+                # set project if it requires a payment
+                if implementations[implementation_number]["payment"]["value"] > 0:
+                    projectParams = ProjectParams(_id, implementations[implementation_number]["id"], implementations[implementation_number]["payment"]["value"], implementations[implementation_number]["distributions"])
+                    mut_eval_setProject(projectParams=projectParams)
+
 
 @app.get("/list")
 def get_list(sites: str | None = Query(default=None)):
@@ -324,6 +329,13 @@ class ProjectParams(BaseModel):
     price: float
     distributions: List[str]
 
+    def __init__(self, issueId: str, implementationId: int, price: float, distributions: List[str]):
+        self.issueId = issueId
+        self.implementationId = implementationId
+        self.price = price
+        self.distributions = distributions
+
+
 def get_registered(_id: str) -> List | None:
     registered = None
     contract_id = ObjectId(_id)
@@ -346,6 +358,7 @@ def get_distributions(issueId: str, implementationId: int) -> list | None:
         distributions = exist_issue["distributions"].iloc[0]
     return distributions
 
+# For testing only. In the production version it must be called internally.
 @app.post("/mut_eval_setProject")
 def mut_eval_setProject(projectParams: ProjectParams):
     registered = get_registered(hour_pay_contract_id)
