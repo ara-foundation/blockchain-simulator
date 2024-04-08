@@ -264,7 +264,7 @@ def prod(prod_params: ProdParams):
 
                 # set project if it requires a payment
                 if implementations[implementation_number]["payment"]["value"] > 0:
-                    projectParams = ProjectParams(issueId=_id, implementationId=implementations[implementation_number]["id"], price=implementations[implementation_number]["payment"]["value"], distributions=implementations[implementation_number]["distributions"])
+                    projectParams = ProjectParams(issueId=prod_params.id, implementationId=implementations[implementation_number]["id"], price=implementations[implementation_number]["payment"]["value"], distributions=implementations[implementation_number]["distributions"])
                     mut_eval_setProject(projectParams=projectParams)
 
 
