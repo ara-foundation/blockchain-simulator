@@ -264,7 +264,7 @@ def prod(prod_params: ProdParams):
 
                 # set project if it requires a payment
                 if implementations[implementation_number]["payment"]["value"] > 0:
-                    projectParams = ProjectParams(_id, implementations[implementation_number]["id"], implementations[implementation_number]["payment"]["value"], implementations[implementation_number]["distributions"])
+                    projectParams = ProjectParams(issueId=_id, implementationId=implementations[implementation_number]["id"], price=implementations[implementation_number]["payment"]["value"], distributions=implementations[implementation_number]["distributions"])
                     mut_eval_setProject(projectParams=projectParams)
 
 
@@ -328,13 +328,6 @@ class ProjectParams(BaseModel):
     implementationId: int
     price: float
     distributions: List[str]
-
-    def __init__(self, issueId: str, implementationId: int, price: float, distributions: List[str]):
-        self.issueId = issueId
-        self.implementationId = implementationId
-        self.price = price
-        self.distributions = distributions
-
 
 def get_registered(_id: str) -> List | None:
     registered = None
