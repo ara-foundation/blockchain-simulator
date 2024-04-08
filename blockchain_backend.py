@@ -420,8 +420,6 @@ def mut_eval_deposit(issueId: str, implementationId: int, userId: str):
             (df["issueId"] == issueId)
             &
             (df["implementationId"] == implementationId)
-            &
-            (df["userId"] == userId)
         ]
 
         if not exist_issue.empty:
